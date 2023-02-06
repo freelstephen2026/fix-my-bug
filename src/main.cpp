@@ -20,6 +20,29 @@ std::vector<T> &insertQuadToVec(std::vector<T> &vec, T e1, T e2, T e3, T e4, T e
 
 namespace my
 {
+	namespace file_utils
+	{
+		std::string& read_file_contents(char* path)
+		{
+			FILE* fp = std::fopen(path, "r");
+
+			std::string ret;
+
+			while (!feof(fp))
+			{
+				char c = fgetc(fp);
+				ret.push_back(c);
+			}
+			char* str = (char*)ret.c_str();
+			str[strlen(str) - 1] = '\0';
+
+			fclose(fp);
+
+			std::string* retVal = new std::string(str);
+			return *retVal;
+		}
+	}
+
 	namespace math
 	{
 		template <typename T>
@@ -41,6 +64,20 @@ namespace my
 
 	namespace GL
 	{
+		my::math::coords<float> get_coords(GLFWwindow* window)
+		{
+			double xPos;
+			double yPos;
+			glfwGetCursorPos(window, &xPos, &yPos);
+			int width, height;
+			glfwGetWindowSize(window, &width, &height);
+
+			float x_normalized = 2.0f * (float)xPos / (float)width - 1.0f;
+			float y_normalized = -2.0f * (float)yPos / (float)height + 1.0f;
+
+			return my::math::coords<float>(x_normalized, y_normalized);
+		}
+
 		std::string get_vertex_shader_src(const char*);
 
 
@@ -209,8 +246,21 @@ static bool compare_strings(const char* str1, const char* str2)
 	return true;
 }
 
+char* non_const_str(const char* str)
+{
+	char* ret = new char[std::strlen(str)];
+	for (int i = 0; i < std::strlen(str); i++)
+	{
+		ret[i] = str[i];
+	}
+	ret[std::strlen(str)] = '\0';
+	return ret;
+}
+
 int gladMain(int argc, char **argv)
 {
+	my::math::coords<float> cursor(0, 0);
+
     my::GL::vertex_properties<float, my::GL::TRIANGLE> vertexProperties;
 
 	if (!glfwInit()) {
@@ -220,15 +270,15 @@ int gladMain(int argc, char **argv)
 
 	printf("reading from vertex.shader:\n");
 
-	const char* std_str = my::GL::get_vertex_shader_src("src/shaders/vertex.shader").c_str();
-
-	std::cout << "\n\n\nstd_str:" << std_str << std::endl;
-	std::cout << "\n\n\nstd_str:" << my::GL::get_vertex_shader_src("src/shaders/vertex.shader") << std::endl;
+	const char* std_str = my::GL::get_vertex_shader_src("src/shaders/vertex.vert").c_str();
 
 	/* shaders */
-	char* vertexShaderSource = (char*)	my::GL::get_vertex_shader_src("src/shaders/vertex.shader").c_str();
-	vertexShaderSource = (char*) (my::GL::get_vertex_shader_src("src/shaders/vertex.shader").c_str());
-	std::cout << "vertex shader:\n" << vertexShaderSource << std::endl;
+	std::string vertexShaderSource = my::GL::get_vertex_shader_src("src/shaders/vertex.vert");
+	printf("passed test 2\n");
+	std::cout << "vertex shader:\n" << vertexShaderSource << "OR" << my::GL::get_vertex_shader_src("src/shaders/vertex.vert").c_str() << std::endl;
+	std::cout << "----------------------------------\n" << (char*)my::file_utils::read_file_contents((char*)"src/shaders/vertex.vert").c_str() << "\n----------------------\n";
+
+	printf("passed test 3\n");
 
 	const char *fragmentShaderSource = (char*)	"#version 330 core\n"
                                    				"out vec4 FragColor;\n"
@@ -254,8 +304,8 @@ int gladMain(int argc, char **argv)
     }
 
 	/* compile shaders */
-	int vertexShader = my::GL::get_vertex_shader(vertexShaderSource);
-    int fragmentShader = my::GL::get_fragment_shader((char*)fragmentShaderSource);
+	int vertexShader = my::GL::get_vertex_shader(non_const_str(vertexShaderSource.c_str()));
+    int fragmentShader = my::GL::get_fragment_shader(non_const_str(fragmentShaderSource));
 
     // create shader program
 	int shaderProgram = my::GL::make_shader_program(vertexShader, fragmentShader);
@@ -289,7 +339,16 @@ int gladMain(int argc, char **argv)
     glBindVertexArray(0);
 
     // render loop
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window))
+	{
+
+		cursor = my::GL::get_coords(window);
+		std::cout << "cursor: (" << cursor.x << ", " << cursor.y << ")" << std::endl;
+
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			printf("W pressed\n");
+		}
         // input
         glfwPollEvents();
 
