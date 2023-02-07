@@ -11,6 +11,15 @@
 #include <iostream>
 #include <vector>
 
+struct Character {
+    unsigned int TextureID;  // ID handle of the glyph texture
+    glm::ivec2   Size;       // Size of glyph
+    glm::ivec2   Bearing;    // Offset from baseline to left/top of glyph
+    unsigned int Advance;    // Offset to advance to next glyph
+};
+
+std::map<char, Character> Characters;
+
 /* to get vector amount of elements, use `std::vector<T>::size()`. to get the size of each element, use `sizeof(std::vector<T>::value_type) */
 template <typename T>
 std::vector<T>& insertTriangleToVec(std::vector<T> &vec, T e1, T e2, T e3, T e4, T e5, T e6);
